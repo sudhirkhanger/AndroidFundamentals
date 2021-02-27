@@ -1,0 +1,840 @@
+* Android
+** Activity
+
+- Creates window where UI can be put using setContentView(view).
+- Must be declared in Manifest.
+- Are placed in Activity Stacks.
+- An Activity goes through four states
+  - Active/foreground
+  - Partially visible or visible but not active/focused
+  - Fully obscured by another Activity
+  - Destroyed
+- Three key loops.
+  - Entire lifetime - onCreate() to onDestroy()
+  - Visible lifetime - onStart() to onStop()
+  - Foreground lifetime - onResume() to onPause()
+- Lifecycle
+  - onCreate() - Activity is created. Must override. Initialize essential components. Not Killable. onStart() is next.
+  - onRestart() - Called when Activity is starting after being stopped. Not Killable. onStart() next.
+  - onStart() - Activity is becoming visible to the user. Not Killable. onResume() or onStop() next.
+  - onResume() - In focus. Not killable. Always followed by onPause().
+  - onPause() - Loses focus. User leaving. No further work should be done. There may not be enough time to save existing data. onStop() or onDestroy() is being called but hasn't gone there fully. Keep updating the UI. Not killable. onResume() or onStop() next.
+  - onStop() - Activity is not visible to the user. Killable. onRestart() or onDestory() next. Data saving or heavy load shut down operations should happen here.
+  - onDestroy() - Release all resources. Activity is destroyed. Killable.
+
+[[file:/home/sudhir/Dropbox/Orgzly/activity_lifecycle.png]]
+
+- intent-filter allows other apps to open the Activity explicitly (fully qualified name provided) or implicitly (define task/action).
+- Bundle should be used to save trivial data because it requires serialization on the main thread and consumes system-process memory.
+- onSaveInstanceState() is not called if user calls finish() or on back press.
+- Config changes includes orientation, language, input device, etc. change.
+- AlertDialog or DialogFragment (regular sized or full screen) don't put the Activity or Fragment into onPause() stage because Activity/Fragment lifecycle is affected only when Activity stack is changed. AlertDialog or DialogFragment don't change the Activity stack.
+
+*** Understanding Tasks and Back Stack
+
+ - Task - A collection or Stack of Activities.
+ - Back Stack - Activities arranged in a Stack. This could also contain Fragment transaction. A Task is more about Activities and a back stack is related to both Activities or Fragment.
+ - TaskStackBuilder can build a Task synthetically.
+ - LIFO - Root (or graphically the bottom) contains older Activities whereas newer ones are at top.
+ - Intent flags take precedence over launchMode mentioned in the manifest.
+
+**** launchMode
+
+- Defines how a new instance of an Activity is associated with the current task.
+
+***** standard
+
+- Default mode
+- Exists on top - new instance created
+- Exists in middle - new instance created
+- Doesn't exist - new instance created
+- Multiple instances allowed in the same or different tasks
+
+***** singleTop
+
+- Exists on top - calls onNewIntent() instead of creating a new instance.
+- Exists in middle - new instance is created at the top.
+- Doesn't exist - new instance is created at the top.
+- Multiple instances allowed in the same or different task.
+
+***** singleTask
+
+- Exists on top - calls onNewIntent() instead of creating a new instance.
+- Exists in middle - Activities above are destroyed and onNewIntent() is called.
+- Doesn't exist - new instance is created at the top.
+- Only one instance can exist at a time.
+
+***** singleInstance
+
+- Exist - onNewIntent() is called.
+- Doesn't exist - new instance is created in a new task.
+- Only one member in the task.
+
+***** taskAffinity="SOME_TASK_AFFINITY"
+
+- Associate Activity with a particular Task.
+- Multiple tasks can be seen as separate entries in recent apps.
+- Multiple tasks can exist in single task affinity.
+- Package name is used as the default taskAffinity value.
+
+***** Intent flags
+
+- FLAG_ACTIVITY_NEW_TASK
+ - Same as singleTask
+ - Starts Activity in a new Task
+- FLAG_ACTIVITY_CLEAR_TOP
+ - If running then destroys all members of the Stack above it and calls onNewIntent().
+- FLAG_ACTIVITY_SINGLE_TOP
+ - Same as singleTop
+- FLAG_ACTIVITY_CLEAR_TASK
+ - Clears The task before launching an Activity.
+
+*** Processes and Application Lifecycle
+
+- Importance hierarchy of processes.
+  - foreground process - killed as a last resort.
+    - Activity - onResume()
+    - BroadcastReceiver - onReceive()
+    - Service - onCreate(), onStart(), onDestroy()
+  - Visible process - very high priority but lessor than foreground process
+    - Activity - onPause()
+    - Service with startForeground()
+    - Live wallpaper, inpur method manager, etc.
+  - Service process - tries to retain these processes
+    - Service started with startService()
+    - Cached process - not needed currently and system is free to kill as desired.
+    - Activity - onStop()
+
+*** Recents/Overview
+
+- Document-centric - Multiple instances of the same Activity containing different documents(data, Uri, etc.) may appear as separate tasks in Recents screen.
+- FLAG_ACTIVITY_NEW_DOCUMENT - launch Activity as a separate task. Activity must use standard launchMode.
+- FLAG_ACTIVITY_MULTIPLE_TASK - launch all instances as a separate task. If it is already open then onNewIntent() is called.
+- documentLaunchMode
+  - intoExisting - reuses existing task
+  - always - always a new task
+  - none - doesn't create a new task (default one).
+  - never - overrides the two intent flags and doesn't create a new task.
+
+** Fragments
+
+- Modular section of a UI hosted in Activities.
+- Has its own lifecycle, can receive input events and can be added or removed while the host Activity is running.
+- Lifecycle is affected by the lifecycle of the host Activity.
+- Backstack is managed by the host Activity. Each transaction is one entry in the backstack.
+- FragmentManager
+  - Performs Transaction which adds or removes or replaces fragments.
+  - parentFragmentManager
+    - Fragment manager of host.
+  - childFragmentManager 
+    - Fragment manager of a fragment which manages other fragments inside it.
+    - Should be used in fragment otherwise child fragments will not be cleared and would leak memory.
+
+*** Lifecycle
+
+- onAttach() - activity is associated/passed
+- onCreate() - called when creating a fragment. Init essential components that you want to retain when fragments pauses or stopped and then resumed.
+- onCreateView() - draws the UI
+- onActivityCreated() - called when activity's onCreate() method has returned.
+- onStart()
+- onResume()
+- onPause() - User is leaving the fragment. Save to persist current user session.
+- onStop()
+- onDestroView()
+- onDestroy()
+- onDetach() - Activity is disassociated with the fragment and is removed.XS
+
+** Service
+
+- Perform long-running operations in background.
+- Doesn't provide user interface.
+- Runs the process in main thread by default.
+
+*** Types of Services
+
+**** Foreground
+
+- Operation noticeable to the users
+
+**** Background
+
+- Operation not noticeable to the users. Restricted in API 26 or above.
+
+**** Bound
+
+- Bound to another app component.
+- Acts as a server in a client-server interface.
+- It allows components (such as activities) to bind to the service, send requests, receive responses, and perform interprocess communication (IPC).
+- A bound service typically lives only while it serves another application component and does not run in the background indefinitely.
+- Must override onBind() which returns an IBinder object.
+- IBinder
+  - An IBinder object defines a programming interface which clients can use to interact with a service.
+  - It can of the following three possible types.
+    - Binder class - If your service is private to your own application and runs in the same process as the client
+    - Messenger - interface that works across different processes. creates a queue of all the client requests in a single thread, so the service receives requests one at a time.
+    - AIDL - the Messenger creates a queue of all the client requests in a single thread, so the service receives requests one at a time. If, however, you want your service to handle multiple requests simultaneously, then you can use AIDL directly. Android Interface Definition Language (AIDL) decomposes objects into primitives that the operating system can understand and marshals them across processes to perform IPC. Using AIDL is necessary only if you allow clients from different applications to access your service for IPC and want to handle multithreading in your service.
+
+*** Lifecycle
+
+- onStartCommand() - invoked when a service is started by an intent call. Called every time intent is invoked.
+- onCreate() - one-time setup
+- onBind() - If you don't want to allow binding otherwise return null.
+- If started by startService() then should be stopped by stopSelf() (from within the service itself) or stopService() (from another component).
+- If started by bindService() (bounded) and startService() (started) is not called then it runs only as long as it is bound. System destroys it when it becomes unbounded. A bounded and a started service must be stopped by calling stopSelf() or stopService().
+
+** BroadcastReciever
+
+- Broadcasts can be used as a messaging system across apps and outside of the normal user flow
+- Broadcast message itself is wrapped in an Intent object whose action string identifies the event that occurred
+- Once onReceive() is returned the process is considered complete and a low priority and is prone to be killed. Schedule job for long running task. Starting another thread is not the solution to this issue. The process is still considered low priority.
+
+*** Types
+
+- Manifest-declared receivers
+  - declared in the manifest
+  - implicit intent (broadcasts that don't target your app specifically) can't be registered
+  - intent-filter is used to specify the broadcast action the receiver is subscribed to.
+  - subclass BroadcastReceiver and implement onReceive(context, intent)
+- Context-registered receivers
+  - valid as long as the registering context is valid
+
+*** Security
+
+- Permissions allow restricting broadcasts to a set of apps that hold certain permissions.
+  - Permission can be added to the intent where receiving app must declare it to be able to receive the broadcast.
+  - If a permission has been declared in <receiver> or in the context-registered receivers then the sending app must declare the relevant permission.
+- Do not broadcast sensitive information using an implicit intent. Use setPackage(String packageName) to deliver to a an application with that matches with the packageName.
+
+** Intents
+
+- Messaging object you can use to request an action from another app component
+- facilitates communication between components
+  - starting an activity
+  - starting a service
+  - sending broadcast
+- types
+  - Explicit - specifies target app's package name or fully qualified component class name.
+  - Implicit - doesn't specify a specific component but declares a general action to perform.
+    - intent-filter are used by other apps to define which type of implicit intents can be handled by the app.
+    - intent-filter specify which type of intents that a component like to receive.
+    - if the system is not able to find an app to handle the intent or is not allowed by the system then the sender app crashes. User resolveActivity() to find out if at least one app is able to handle the intent and then launch it.
+- Building an intent
+  - Component name - required for services and explicit intents.
+  - Action - specifies an action to perform.
+  - Data - points to the data usually using a uri. It may also be a MIME type. If data is the uri then use type for MIME type.
+  - Category - additional info about the kind of component that should handle the intent.
+  - Flag - metadata for the intent. How an activity should be launched and treated is defined via a flag.
+- PendingIntent - A PendingIntent object is a wrapper around an Intent object. The primary purpose of a PendingIntent is to grant permission to a foreign application to use the contained Intent as if it were executed from your app's own process.
+
+** ContentProvider
+
+*** Definition
+
+- Centralize accessing and editing of structured set of data
+- Providers and provider clients offer a consistent, standard interface to data that also handles inter-process communication (connects data in one process with code running in another process) and secure data access.
+- Act as an abstraction layer or intermediary between UI and database.
+- Help an app manage access to data stored by itself, stored by other apps, and provide a way to share data with other apps.
+- Required to work with CursorLoader, SyncAdapter, etc.
+- Implementation
+  - Extend ContentProvider class and override onCreate(), query(), insert(), update(), delete() and getType().
+  - Declare <provider> tag in the Android Manifest along with permissions.
+
+*** ContentResolver
+
+- ContentResolver from app's context act as a client to communicate with the provider, an object of ContentProvider. The provider object receives data requests from clients, performs the requested action, and returns the results.
+- Method calls are identically-named with the provider object.
+- Parses out the URI's authority, and uses the authority to "resolve" the provider by comparing the authority to a system table of known providers and then dispatches the query arguments to the correct provider.
+- Projection - set of columns that the query should return.
+- Uri - maps to the table in the provider named table_name.
+- Selection - specifies the criteria for selecting rows.
+
+*** Uri and Matcher
+
+- Content URI is a Uri or uniform resource identifier that maps to the table in the provider.
+  - Uniquely identifies a set of data which can be either a single or multiple row in a database or a file.
+  - Content URIs include the symbolic name of the entire provider (its authority) and a name that points to a table (a path).
+  - content://com.android.contacts/contacts/id
+    - scheme (content://) - type of Uri
+    - authority (com.android.contacts) - unique across the system.
+    - path (contacts) - type of data or usually table name
+    - row (id) - specifies a single row
+- Uri Matcher
+  - Matches a Uri with an integer code to determines what kind of Uri was passed to the provider. Integer values chooses the desired action for the content URI or URIs that match a particular pattern. A content URI pattern matches content URIs using wildcard characters.
+    - *: Matches a string of any valid characters of any length.
+    - #: Matches a string of numeric characters of any length. Points to a single row.
+
+*** Permissions
+
+- Permissions are not set by default which means all apps can read from or write to your provider even if the underlying data is private
+- Set in the <provider> tag in manifest file
+- Control access
+  - android:permission allows single permission for provider-level read-write access.
+  - Separate read and write provider-level permission
+    - android:readPermission - query
+    - android:writePermission - insert, update, delete
+    - takes precedence over android:permission
+  - Path-level permission
+    - Read, write, or read/write permission for a content URI in the provider. Specify each URI to control with a <path-permission> child element of the <provider> element.
+    - android:path="/subPath" - applies to entries within subPath but not subdirectories within it.
+    - android:pathPrefix="/subPath" - applies to subdirectories within the subPath.
+    - android:pathPattern - wildcard
+  - Temporary permission
+    - URI permissions allow any component that has permission to access a content URI within a Content Provider to temporarily grant another component that permission, even if that component does not itself have permission to access the Content Provider.
+    - By default the granting of temporary URI permissions is disabled and can be enabled as using the following ways.
+      - android:grantUriPermission
+	- true - permission can be granted to any of the content provider's data.
+	- false - permission can be granted only to the data subsets listed in <grant-uri-permission> subelements, if any.
+      - <grant-uri-permission> - path-level permissions with same control as path, pathPrefix, and pathPattern.
+    - Call Context.revokeUriPermission() whenever support for a content Uri is removed.
+    - You can access data in a content provider, even if you don't have the proper access permissions, by sending an intent to an application that does have the permissions and receiving back a result intent containing "URI" permissions. These are permissions for a specific content URI that last until the activity that receives them is finished. The application that has permanent permissions grants temporary permissions by setting a flag in the result intent.
+      - Read permission: FLAG_GRANT_READ_URI_PERMISSION
+      - Write permission: FLAG_GRANT_WRITE_URI_PERMISSION
+
+*** Notes
+
+- android:enabled: Flag allowing the system to start the provider.
+- android:exported: Flag allowing other applications to use this provider.
+- A contract class is a public final class that contains constant definitions for the URIs, column names, MIME types, and other meta-data that pertain to the provider. The class establishes a contract between the provider and other applications by ensuring that the provider can be correctly accessed even if there are changes to the actual values of URIs, column names, and so forth.
+- The ContentProvider class has two methods for returning MIME types:
+  - getType() returns MIME type or content type which describes the type of data stored at the input Uri
+  - Android's vendor-specific MIME format.
+    - Single record - vnd.android.cursor.item/vnd.com.example.provider.table1
+    - Multiple record - vnd.android.cursor.dir/vnd.com.example.provider.table1
+  - getStreamTypes()
+    - Implement if your provider offers files.
+- If the data managed by the content provider is in an SQL database, including external untrusted data into raw SQL statements can lead to SQL injection. contentResolver.query(_, _, selection, selectionArgs, _). One can pass malicious SQL code in the query to mitigate this selection and selectionArgs should be used. When you do this, the user input is bound directly to the query rather than being interpreted as part of an SQL statement. Because it's not treated as SQL, the user input can't inject malicious SQL.
+
+** SQLite
+
+ - Schema - a formal declaration of how the database is organized.
+ - Contract class
+   - Companion class which explicitly specifies the layout of your schema in a systematic and self-documenting way.
+   - It is a container for constants that define names for URIs, tables, and columns.
+   - Extends BaseColumns class which has _ID which works as primary key.
+ - SQLiteOpenHelper class
+   - Contains a useful set of APIs for managing your database
+   - Obtain references to the database
+ - Cursor starts at position -1 so doing moveToNext gives you the first position.
+
+** Concurrency
+
+- Thread A contains a MessageQueue A and a Looper A (one per thread). Looper A keeps the Thread A alive. Looper A/Thread A have Handlers. Handlers can be used by other threads to put the messages in the MessageQueue A. Looper dequeue the messages and delivers it to the enqueuing Handler which executes in the Thread A which it is associated with.
+
+*** Thread (class)
+
+- Thread is a thread of execution in a program.
+- It is a class which implements Runnable interface
+- There are two ways to create a Thread
+  - By extending Thread class which overrides run method from the Runnable interface.
+  - A class implement Runnable interface which implements run method.
+- All components of an app run in the same process or thread by default.
+- Main thread is in charge of dispatching events to the appropriate user interface widgets and communicating with Android UI toolkit.
+- Android UI is not thread safe and has to be modified from the main thread itself.
+- Some ways to access UI thread from other threads
+  - Activity.runOnUiThread(Runnable)
+  - View.post(Runnable)
+  - View.postDelayed(Runnable, Long)
+- Thread are one time use only and are destroyed once run method is completed.
+- There is an overhead involved in starting a thread.
+
+*** Handler
+
+- Handler enqueues task in the MessageQueue using Looper and also executes them when the task comes out of the MessageQueue.
+- HandlerThread - a subclass of Thread which streamlines process of creation of Looper, Handler, etc. It is a convenience class.
+- A Handler allows you to send and process Message and Runnable objects associated with a thread's MessageQueue.
+- Each Handler instance is associated with a single thread and that thread's message queue.
+- When you create a new Handler it is bound to a Looper.
+- It will deliver messages and runnables to that Looper's message queue and execute them on that Looper's thread.
+- When a handler is created, it can get a Looper object in the constructor, which indicates which thread the handler is attached to.
+- There are two main uses for a Handler
+  - to schedule messages and runnables to be executed at some point in the future
+  - to enqueue an action to be performed on a different thread than your own.
+
+*** Looper
+
+- As threads are one-time use only and finish after it executes its run method we need a way to keep the thread alive or active. That's what the Looper does. It puts the thread into an infinite loop.
+- Looper is a worker that keeps a thread alive, loops through MessageQueue and sends messages to the corresponding handler to process.
+- One thread can have only one unique Looper and can have many unique Handlers associated with it.
+- Class used to run a message loop for a thread.
+- Most interaction with a message loop is through the Handler class.
+- It dequeue the messages and sends them to the corresponding Handlers or executes the Runnable using the tread.
+- Looper.getMainLooper() - the looper associated with the main thread.
+- Looper.myLooper() - Return the Looper object associated with the current thread. 
+
+*** MessageQueue
+
+- MessageQueue is a queue that has tasks called messages (Message, Runnable, etc.) which should be processed.
+- Messages are not added directly to a MessageQueue, but rather through Handler objects associated with the Looper.
+
+*** Message
+
+- Tasks that are queued in the MessageQueue for execution by the thread
+- It is a class that defines various useful methods to deal with message data.
+- When a thread is free to process the message, the message is passed to the handler which enqueued it in the MessageQueue
+
+*** Runnable (interface)
+
+- Should be implemented by any class whose instances are intended to be executed by a thread
+- Implements no-argument run method
+- Provide a common protocol for objects that wish to execute code while they are active. Being active simply means that a thread has been started and has not yet been stopped.
+- A class that implements Runnable can run without subclassing Thread by instantiating a Thread instance and passing itself in as the target.
+- In most cases, the Runnable interface should be used if you are only planning to override the run() method and no other Thread methods.
+- Runnable is executed when the thread is free.
+
+*** Executor
+
+- An interface with a single method execute() which takes runnable objects and executes it at some time in future.
+- Used to decouple task submission from task execution.
+
+*** ExecutorService
+
+- An interface which implements Executor class and contains additional methods to manage asynchronous tasks.
+
+*** ThreadPoolExecutor
+
+- An ExecutorService that assigns tasks to a pool of threads.
+- Constructor allows setting initial and maximum number of threads to be used, time to keep them alive, and a queue for holding tasks.
+
+[[file:/home/sudhir/Dropbox/Orgzly/handler_looper_queue.png]]
+
+** Architecture Components
+
+*** LiveData
+
+- Lifecycle-aware observable data-holder class.
+- Updates the observer only if it is in STARTED or RESUMED state.
+- LiveData is immutable. Use MutableLiveData to change the underlying value.
+- Important methods
+  - setValue - called from main thread
+  - postValue - called from worker thread
+  - onActive() - called when the number of active observers change from 0 to 1.
+  - onInactive() - called when the number of active observers change from 1 to 0.
+- Same LiveData can be observed from multiple activities, fragments, and services.
+- Transformations
+  - Transformations.map() - change and return the underlying value.
+  - Transformations.switchMap() - observes a LiveData. Returns a LiveData which contains the changed underlying value.
+  - Active observer is needed to transform
+- MediatorLiveData
+  - subclass of LiveData that allows merging of LiveData sources
+  - observers are triggered whenever any of the original LiveData source objects change.
+
+*** ViewModel
+
+- store and manage UI-related data in a lifecycle conscious way.
+- allows data to survive configuration changes such as screen rotations.
+- scoped to the Lifecycle passed to the ViewModelProvider when getting the ViewModel.
+- remains in memory until the Lifecycle it's scoped to goes away permanently.
+  - activity onDestroy()
+  - fragment - onDetach()
+- onCleared() - called when the ViewModel is no longer used and will be destroyed.
+- Typically, one VM is used per-screen. VM support sharing its instance across Fragments but not activities in which case one possible option is to use a singleton. One can also create a class where you track all the observers and call VMs onCleared when all observers are removed.
+- ViewModels can't be created directly. ViewModelProvider is used to create ViewModels. ViewModelProvider can only create ViewModel directly only if there are no constructor arguments. If you need a VM with arguments then you need to use ViewModelFactory which passes the args to ViewModelProvider using which it can create ViewModel with args.
+
+*** WorkManager
+
+- Schedule deferrable and asynchronous tasks that are expected to run even if app exits or the device restarts.
+- Work class extends Worker class which implements doWork().
+- doWork() runs in background thread.
+- Return Result class
+- WorkRequest can schedule a work one time (OneTimeWorkRequest) or recurring (PeriodicWorkRequest).
+- WorkManager executes WorkRequests.
+- Constraints can be used to execute work during optimal conditions.
+
+*** Room
+
+- Abstraction layer over SQLite
+- Relational database
+
+**** There are 3 major components in Room:
+
+- Database
+  - Contains the database holder and serves as the main access point for the underlying connection to app db.
+  - annotated with @Database
+  - abstract class that extends RoomDatabase.
+  - Include the list of entities associated with the database within the annotation.
+  - Contain an abstract method that has 0 arguments and returns the class that is annotated with @Dao.
+- Entity
+  - Represents a table within the database.
+  - Each entity must define at least 1 field as a primary key.
+- DAO: Contains the methods used for accessing the database.
+
+**** Relationships
+  
+- one-to-one
+  - each instance of the parent entity corresponds to exactly one instance of the child entity, and vice-versa.
+- one-to-many
+  - each instance of the parent entity corresponds to zero or more instances of the child entity, but each instance of the child entity can only correspond to exactly one instance of the parent entity.
+- many-to-many
+  - each instance of the parent entity corresponds to zero or more instances of the child entity, and vice-versa.
+- nested
+  - query a set of three or more tables that are all related to each other.
+
+**** Notes
+
+- @Embedded embed the whole object. For example, in a table User you can embed item address which has sub-items like pincode.
+- @Query - perform read/write operations on a database
+- IN - queries might require a variable number of parameters
+- @Transactions - run multiple queries atomically
+- TypeConverter
+  - Room doesn't allow object reference. Hence you have to convert objects into types which room can understand using TypeConverter.
+  - Object reference is disallowed due to poor performance. You would either load unnecessary data or not be able to load on time. Instead data can be saved in multiple POJO and queried as needed.
+
+** Behavioural Changes
+
+*** Android 11 (API 30)
+
+*** Android 10 (API 29)
+
+*** Pie (Android 9.x or API 28)
+
+- 
+
+*** Oreo (Android 8.x or API 26)
+
+- Picture-in-Picture mode
+- Fonts in XML
+- Background execution limits
+  - Have to use services with foreground notification
+  - Implicit broadcasts can't be registered via manifests
+- Notification channels
+
+*** Nougat (Android 7.x or API 24)
+
+- Multi-window Support
+- Profile-guided JIT/AOT Compilation
+- Doze activated when screen is off
+- Minimize RAM usage via Project Svelte
+- Removed common broadcasts (CONNECTIVITY_ACTION, ACTION_NEW_PICTURE, and ACTION_NEW_VIDEO)
+- Vulkan API
+- file:// will throw FileUriExposedException if it is shared outside the package. Use FileProvider instead.
+- App Shortcuts
+
+*** Marshmallow (Android 6.x or API 23)
+
+- Fingerprint authentication
+- Runtime permissions
+- Doze mode and app standby
+
+*** Lollipop (Android 5.x or API 21)
+
+- Material design
+- ART
+  - Ahead-of-time (AOT) compilation
+  - Improved garbage collection (GC)
+
+*** Kitkat (Android 4.4 or API 19)
+
+- Less memory usage (heap) and protect system memory for smoother experience
+- Services are run serially instead of all of them together on queue like network changes
+- Print framework enables print with cloud connected printers and services.
+- Storage access framework - browse and open files and documents in a consistent way from cloud or local document storage providers.
+- Full screen immersive mode which hides all system UIs.
+- Screen recording
+- SMS Provider
+- Layout will be drawn behind the system ui in the immersive mode. Use fitsSystemWindows for portion that should not be covered by the system bars.
+
+** Navigation Component
+
+- Navigate across, into and back out from different pieces of content
+- There are three key parts which are as follows
+  - Navigation graph
+    - XML resource
+    - Contains all content areas (destinations) and possible paths through the app
+    - Destinations are connected via actions.
+    - Actions are logical connections b/w destinations that represent paths that users can take.
+  - NavHost
+    - Navigation host is an empty container where destinations are swapped in and out as a user navigates through an app.
+    - NavHostFragment which is a default implementation of NavHost and it displays fragment destinations.
+    - FragmentContainerView element is used for adding NavHost in XML.
+  - NavController
+    - Object that manages app navigation within a NavHost
+    - Orchestrates swapping of destination content in NavHost
+- Login flows, wizards, or other sub-flows within your app are usually best represented as nested navigation graphs.
+- Global actions allows us to reach to destinations from any other destination
+
+** Security
+
+- Encryption can doesn't solve the problem where identity of the user needs to be verified. Hardware keys are prone to user losing them. SMS codes can be delivered to the stolen device. Use biometric authentication to verify user presence.
+- Biometric authentication doesn't leave the device and is not shared with the app. It is stored in Trusted Execution Environment or TEE.
+- ContentProvider permissions
+- BroadcastReceiver permissions
+
+* Dagger
+
+ - Advantages.
+   - Reusablity of code
+   - Ease of testing
+   - Ease of refactoring
+ - @Inject
+   - Inject annotated constructor ~ instance of the class will be created
+   - Inject annotated fields - Dagger will inject/provide/create the field
+ - @Component
+   - interface which tells dagger to generate the dependency graph.
+   - methods inside component tell dagger that dependencies are injected where methods are called.
+
+* Object Oriented Programming or OOPs
+
+- Based on the concept of classes (blueprints using which objects are created) and objects (instance of classes).
+- Objects contain data (fields) and code (methods).
+- Interaction between objects constitute a computer program.
+
+** Nested Classes
+
+- Signals that the classes are meant to be used together or within the top level class.
+- There are two types of nested classes.
+  - Nested static class
+    - Can be created without reference of the outer class (without object of the outer class).
+    - Acts as a static member of the outer class and can be used from the static context.
+    - Can only access static members (methods, fields, etc.)
+    #+begin_src java
+    Outer.Inner inner = new Outer.Inner();
+    #+end_src
+  - Non-Static nested class or inner class
+    - Need outer class's reference or object to create inner class.
+    - Can access both static and non-static members.
+    #+begin_src java
+    Outer outer = new Outer();
+    Outer.Inner inner = outer.new Inner();
+    #+end_src
+
+** Four pillars of OOPs (PEA I)
+
+*** Abstraction
+
+ - Concept of hiding internal details (data and implementation). Expose relevant info to the client
+ - For example, one doesn't need to know how an engine works to know how to drive a car.
+ - Can achieve abstraction using encapsulation and inheritance.
+ - Two types
+   - Data
+     - Data is not visible to the outer world and is exposed via some methods.
+   - Control
+     - Internal details of a function is hidden from the client.
+ - Implemented using interfaces and abstracted classes as follows.
+
+**** Abstract classes
+
+ - Function as a base for subclasses.
+ - Can't be instantiated.
+ - Keyword - extend
+ - Defined as a class or method with keyword abstract. Variables can't be abstract.
+ - Abstract method have no implementation. Must be overridden by subclasses. Must implement all abstract methods.
+ - Can contain both abstract and non-abstract methods. Unlike interface which can only have methods signatures.
+ - Multiple inheritance not allowed.
+ - Can have constructor and static and final methods.
+ - Can't use other access modifiers like private, final, etc.
+ - Example - Vehicle abstract class and Car, Bike, Scooter subclasses.
+   - They all have common operations like start, stop, accelerate, brake, etc.
+   - Having extend abstract class means they share common operations and a Vehicle must have these common attributes.
+   - Client may not be interested in implementation details of operation of start, stop, etc. of bike, scooter, etc.
+
+**** Interfaces
+
+ - Only contains member signatures. No default implementation of methods is provided up to Java 7 but allowed over Java 8 and above.
+ - Keyword - implement
+ - Can't be instantiated. One can instantiate a class that implements the interface.
+ - Implementing class must implement all methods of the interface being implemented.
+ - Multiple inheritance allowed by implementing several interfaces.
+
+Differences between Abstract classes and Interfaces
+
+ - Abstract class can have implemented and unimplemented methods whereas interfaces have only unimplemented methods
+ - Abstract can implement interfaces whereas interfaces can't extend abstract methods
+
+When to use which
+
+ - Use abstract class when default or common implementation may be needed
+
+*** Encapsulation
+
+ - Abstraction exposes relevant details to a client whereas encapsulation hides data and bundles it into a single unit (data and accessors/modifiers).
+ - Hiding data implementation and restricting its access to accessors (state of the data) and mutators (modify the state of the data).
+ - Data hiding is making data inaccessible using modifiers like private, protected, public and default whereas encapsulation both hides data and also provides a way to access it.
+ - Hiding the internals of the object protects its integrity by preventing users from setting the internal data of the component into an invalid or inconsistent state.
+ - Implemented using access-modifiers like private, protected, etc.
+
+*** Inheritance
+
+ - Process where one class acquires attributes and behaviours from a pre-existing class.
+ - Class which inherits properties of another is known as a subclass or a derived class or a child class whereas class whose properties are inherited is known as a superclass or a base class or a parent class or an ancestor class.
+ - Helps in code reuse
+ - The relationships of classes through inheritance gives rise to a hierarchy.
+ - Keyword - extends
+ - Used in runtime polymorphism
+
+*** Polymorphism
+
+ - Polymorphism refers to changing the behavior of a super class in the subclass.
+ - Many-forms or an object behave differently in different situation.
+ - Person superclass and Student subclass both has read method but it can have different implementations.
+ - There are two types of polymorphism
+   - Compile-time or method overloading
+     - Same method but different set of parameters
+     - draw(), draw(int diameter), draw(int diameter, int color)
+   - Runtime polymorphism or dynamic polymorphism or dynamic method dispatch or method overriding
+     - Subclass has to override the Superclass method
+     - Parent class is redefined or overridden in the child class.
+     - Keyword - implements
+
+* SOLID
+
+** S or Single Responsibility Principle (SRP)
+
+ - A class must have only one responsibility.
+ - A class should have only one reason to change.
+
+** O or Open Close Principle
+
+ - Software entities (classes, modules, functions, etc.) should be open for extension, but closed for modification.
+
+** L or Liskov Substitution Principle (LSP)
+
+ - Objects in a program should be replaceable with instances of their subtypes without altering the correctness of that program.
+ - Subclass should override methods from a parent class that does not break the functionality of the parent class.
+ - Objects in a program should be replaceable with instances of their subtypes without changing the behaviour of that program.
+ - The child class should be able to do everything the parent class can do.
+
+** I or Interface Segregation Principle
+
+ - Make fine grained interfaces that are client-specific.
+ - Classes that implement interfaces, should not be forced to implement methods they do not use.
+
+** D or Dependency Inversion Principle
+
+ - High-level modules should not depend on low-level modules. Both should depend on abstractions.
+ - Abstractions should not depend on details. Details should depend on abstractions.
+
+* Design Patterns
+
+- A Design Pattern is a general, reusable solution to a commonly occurring problem within a given context.
+
+** Creational Patterns
+
+- Creation of an objects
+
+*** Builder
+
+- Create an object using only things which are required and not with everything.
+- Separates construction (essential params) and representation (non-essential params) of the object.
+
+#+begin_src java
+class Laptop(builder: Builder) {
+    private val processor: String = builder.processor
+    private val screenSize: String = builder.screenSize
+
+    // Builder class
+    class Builder(processor: String) {
+        var processor: String = processor // this is necessary
+
+        // optional features
+        var screenSize: String = "15inch"
+
+        fun setScreenSize(screenSize: String): Builder {
+            this.screenSize = screenSize
+            return this
+        }
+
+        fun create(): Laptop {
+            return Laptop(this)
+        }
+    }
+}
+
+Laptop.Builder("i7")      // processor is compulsory
+    .setScreenSize("15")  // this is optional
+    .create()
+#+end_src
+
+*** Singleton
+
+- Only a single instance of a class should exist with a global point of access.
+
+#+begin_src java
+object DataManager { }
+#+end_src
+
+*** Dependency Injection
+
+- A class accepts the objects it requires from an injector instead of creating the objects directly.
+
+#+begin_src java
+class DataManager(databaseHelper: DatabaseHelper, networkHelper: NetworkHelper) {
+    private val databaseHelper: DatabaseHelper = databaseHelper
+    private val networkHelper: NetworkHelper = networkHelper
+
+    fun someTask() {
+         // do some operation with DatabaseHelper and NetworkHelper
+    }
+}
+#+end_src
+
+** Structural Patterns
+
+- Composition of an class
+
+*** Adapter
+
+- An adapter lets classes work together that could not otherwise because of incompatible interfaces.
+- For example, using an interface to abstract data/functionality that might be different otherwise.
+
+*** Facade
+
+- Higher-level interface that makes a set of other interfaces easier to use.
+- A complicated system is wrapped into a simpler system that will help us in getting the values from the complicated system without having knowledge of how the data is being fetched and returned.
+- For example, view doesn't know about data or network layer. ViewModel provides a simple interface for the UI layer over multiple systems like repository, network and data layer.
+
+** Behavioural Patterns
+
+- Communication and interaction between objects
+
+*** Observer
+
+- Change in some object, then the dependents of that object will be notified about the change
+- We are observing for some change in the object.
+
+*** Command
+
+- Encapsulates in an object all the data required (methods, args, receiver, etc.) for performing a given action
+- There are four parts of Command pattern
+  - Command stores all info required for executing an action. Interface defines API and implementation is the command itself.
+  - Receiver performs all the action on the data.
+  - Invoker knows how to invoke a command but not the details of the command implementation
+  - Client controls the execution process
+
+*** Model View Controller or MVC
+
+- Model - Business logic and data state
+- View - User interface
+- Controller - Communicates between model and view
+
+*** Model View Presenter
+
+- Presenter - Fetches data from the model and provides the data to the view
+
+*** Model View ViewModel pattern
+
+- ViewModel - Stores and manages the UI-related data.
+
+*** Clean Architecture
+
+* Coroutine
+
+ - Coroutine builder - create/start a coroutine. For example, async(), runBlocking, launch(), etc.
+   - launch - doesn't return the result to the caller. fire and forget.
+   - async - allows you to return a result with a suspend function called await.
+ - CoroutineScope - Keeps track of any coroutine it creates. Can cancel them all. Scope or lifecycle of the caller or the coroutine. For example, GlobalScope, viewModelScope, etc.
+   - viewModelScope - Coroutines are cancelled when the ViewModel is cleared. Useful when computing some data for the layout.
+   - liveDataScope - Active when LiveData is active and cancels when LiveData becomes inactive. Restarted if the LiveData is cleared before the execution of suspended function hasn't finished.
+ - Coroutine Context - contextual info about a coroutine
+ - Job - piece of work that needs to be done. returned by launch(), async(). Handle to the coroutine in the queue. Each coroutine that you create with launch or async returns a Job instance that uniquely identifies the coroutine and manages its lifecycle.
+ - CoroutineDispatcher - defines thread pool to launch coroutine. Can help switch between threads. Coroutine should be executed on a predefined thread. Dispatchers.IO is reserved for IO operations.
+   - Dispatchers.Default - cpu intensive work.
+   - Dispatchers.IO - networking, io, etc.
+   - Dispatchers.Main - ui related events.
+ - withContext(some dispatcher) - change the thread.
+
+** Flow
+
+ - stream of data that executes sequentially
+ - Flow is a sequence
+ - The main difference between Kotlin Sequences and Flow is that Flow allows the execution to be suspended.
+
