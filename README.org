@@ -18,13 +18,13 @@
   - onRestart() - Called when Activity is starting after being stopped. Not Killable. onStart() next.
   - onStart() - Activity is becoming visible to the user. Not Killable. onResume() or onStop() next.
   - onResume() - In focus. Not killable. Always followed by onPause().
-  - onPause() - Loses focus. User leaving. No further work should be done. There may not be enough time to save existing data. onStop() or onDestroy() is being called but hasn't gone there fully. Keep updating the UI. Not killable. onResume() or onStop() next.
+  - onPause() - Loses focus. User leaving. No further work should be done. There may not be enough time to save existing data. onStop() or onDestroy() is being called but hasn't reached there fully. Keep updating the UI. Not killable. onResume() or onStop() next.
   - onStop() - Activity is not visible to the user. Killable. onRestart() or onDestory() next. Data saving or heavy load shut down operations should happen here.
   - onDestroy() - Release all resources. Activity is destroyed. Killable.
 
 [[file:/home/sudhir/Dropbox/Orgzly/activity_lifecycle.png]]
 
-- intent-filter allows other apps to open the Activity explicitly (fully qualified name provided) or implicitly (define task/action).
+- intent-filter allows other apps to open the Activity explicitly (using fully qualified name) or implicitly (by defining task/action).
 - Bundle should be used to save trivial data because it requires serialization on the main thread and consumes system-process memory.
 - onSaveInstanceState() is not called if user calls finish() or on back press.
 - Config changes includes orientation, language, input device, etc. change.
@@ -36,7 +36,7 @@
  - Back Stack - Activities arranged in a Stack. This could also contain Fragment transaction. A Task is more about Activities and a back stack is related to both Activities or Fragment.
  - TaskStackBuilder can build a Task synthetically.
  - LIFO - Root (or graphically the bottom) contains older Activities whereas newer ones are at top.
- - Intent flags take precedence over launchMode mentioned in the manifest.
+ - Intent flags take precedence over launchMode declared in the manifest.
 
 **** launchMode
 
@@ -59,18 +59,18 @@
 
 ***** singleTask
 
-- Exists on top - calls onNewIntent() instead of creating a new instance.
-- Exists in middle - Activities above are destroyed and onNewIntent() is called.
+- Exists on top - calls ~onNewIntent()~ instead of creating a new instance.
+- Exists in middle - Activities above are destroyed and ~onNewIntent()~ is called.
 - Doesn't exist - new instance is created at the top.
 - Only one instance can exist at a time.
 
 ***** singleInstance
 
-- Exist - onNewIntent() is called.
+- Exist - calls ~onNewIntent()~.
 - Doesn't exist - new instance is created in a new task.
 - Only one member in the task.
 
-***** taskAffinity="SOME_TASK_AFFINITY"
+***** ~taskAffinity="SOME_TASK_AFFINITY"~
 
 - Associate Activity with a particular Task.
 - Multiple tasks can be seen as separate entries in recent apps.
@@ -79,15 +79,15 @@
 
 ***** Intent flags
 
-- FLAG_ACTIVITY_NEW_TASK
- - Same as singleTask
+- ~FLAG_ACTIVITY_NEW_TASK~
+ - Same as ~singleTask~
  - Starts Activity in a new Task
-- FLAG_ACTIVITY_CLEAR_TOP
- - If running then destroys all members of the Stack above it and calls onNewIntent().
-- FLAG_ACTIVITY_SINGLE_TOP
- - Same as singleTop
-- FLAG_ACTIVITY_CLEAR_TASK
- - Clears The task before launching an Activity.
+- ~FLAG_ACTIVITY_CLEAR_TOP~
+ - If running then destroys all members of the Stack above it and calls ~onNewIntent()~.
+- ~FLAG_ACTIVITY_SINGLE_TOP~
+ - Same as ~singleTop~
+- ~FLAG_ACTIVITY_CLEAR_TASK~
+ - Clears tasks before launching an Activity.
 
 *** Processes and Application Lifecycle
 
@@ -108,9 +108,9 @@
 *** Recents/Overview
 
 - Document-centric - Multiple instances of the same Activity containing different documents(data, Uri, etc.) may appear as separate tasks in Recents screen.
-- FLAG_ACTIVITY_NEW_DOCUMENT - launch Activity as a separate task. Activity must use standard launchMode.
-- FLAG_ACTIVITY_MULTIPLE_TASK - launch all instances as a separate task. If it is already open then onNewIntent() is called.
-- documentLaunchMode
+- ~FLAG_ACTIVITY_NEW_DOCUMENT~ - launch Activity as a separate task. Activity must use standard launchMode.
+- ~FLAG_ACTIVITY_MULTIPLE_TASK~ - launch all instances as a separate task. If it is already open then onNewIntent() is called.
+- ~documentLaunchMode~
   - intoExisting - reuses existing task
   - always - always a new task
   - none - doesn't create a new task (default one).
@@ -142,7 +142,7 @@
 - onStop()
 - onDestroView()
 - onDestroy()
-- onDetach() - Activity is disassociated with the fragment and is removed.XS
+- onDetach() - Activity is disassociated with the fragment and is removed
 
 ** Service
 
@@ -580,7 +580,7 @@
 
 ** Nested Classes
 
-- Signals that the classes are meant to be used together or within the top level class.
+- Classes are meant to be used together or within the top level class.
 - There are two types of nested classes.
   - Nested static class
     - Can be created without reference of the outer class (without object of the outer class).
