@@ -184,7 +184,7 @@
 
 ** BroadcastReciever
 
-- Broadcasts can be used as a messaging system across apps and outside of the normal user flow
+- Used as a messaging system across apps
 - Broadcast message itself is wrapped in an Intent object whose action string identifies the event that occurred
 - Once onReceive() is returned the process is considered complete and a low priority and is prone to be killed. Schedule job for long running task. Starting another thread is not the solution to this issue. The process is still considered low priority.
 
@@ -192,7 +192,7 @@
 
 - Manifest-declared receivers
   - declared in the manifest
-  - implicit intent (broadcasts that don't target your app specifically) can't be registered
+  - implicit intent (Component (Activity, Service, etc.) name is not provided) can't be registered
   - intent-filter is used to specify the broadcast action the receiver is subscribed to.
   - subclass BroadcastReceiver and implement onReceive(context, intent)
 - Context-registered receivers
@@ -203,7 +203,7 @@
 - Permissions allow restricting broadcasts to a set of apps that hold certain permissions.
   - Permission can be added to the intent where receiving app must declare it to be able to receive the broadcast.
   - If a permission has been declared in <receiver> or in the context-registered receivers then the sending app must declare the relevant permission.
-- Do not broadcast sensitive information using an implicit intent. Use setPackage(String packageName) to deliver to a an application with that matches with the packageName.
+- Do not broadcast sensitive information using an implicit intent. Use setPackage(String packageName) to deliver to an app that matches with the packageName.
 
 ** Intents
 
@@ -216,8 +216,7 @@
   - Explicit - specifies target app's package name or fully qualified component class name.
   - Implicit - doesn't specify a specific component but declares a general action to perform.
     - intent-filter are used by other apps to define which type of implicit intents can be handled by the app.
-    - intent-filter specify which type of intents that a component like to receive.
-    - if the system is not able to find an app to handle the intent or is not allowed by the system then the sender app crashes. User resolveActivity() to find out if at least one app is able to handle the intent and then launch it.
+    - if the system is not able to find an app to handle the intent or is not allowed by the system then the sender app crashes. Use ~resolveActivity()~ to find out if at least one app is able to handle the intent and then launch it.
 - Building an intent
   - Component name - required for services and explicit intents.
   - Action - specifies an action to perform.
