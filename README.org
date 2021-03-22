@@ -229,18 +229,19 @@
 
 *** Definition
 
-- Centralize accessing and editing of structured set of data
-- Providers and provider clients offer a consistent, standard interface to data that also handles inter-process communication (connects data in one process with code running in another process) and secure data access.
-- Act as an abstraction layer or intermediary between UI and database.
-- Help an app manage access to data stored by itself, stored by other apps, and provide a way to share data with other apps.
+- Acts as an abstraction layer or Centralize accessing and editing of structured set of data
+- Providers and provider clients offer a consistent and standard interface to access data stored by itself, stored by other apps, and provide a way to share data with other apps.
+- Handles IPC and secure data access.
 - Required to work with CursorLoader, SyncAdapter, etc.
-- Implementation
-  - Extend ContentProvider class and override onCreate(), query(), insert(), update(), delete() and getType().
-  - Declare <provider> tag in the Android Manifest along with permissions.
+
+*** Implementation
+  
+- Extend ~ContentProvider~ class and override ~onCreate()~, ~query()~, ~insert()~, ~update()~, ~delete()~ and ~getType()~.
+- Declare ~<provider>~ tag in the Android Manifest along with permissions.
 
 *** ContentResolver
 
-- ContentResolver from app's context act as a client to communicate with the provider, an object of ContentProvider. The provider object receives data requests from clients, performs the requested action, and returns the results.
+- ~Context.ContentResolver~ act as a client to communicate with the provider (an object of ContentProvider). The provider object receives data requests from clients, performs the requested action, and returns the results.
 - Method calls are identically-named with the provider object.
 - Parses out the URI's authority, and uses the authority to "resolve" the provider by comparing the authority to a system table of known providers and then dispatches the query arguments to the correct provider.
 - Projection - set of columns that the query should return.
@@ -252,47 +253,49 @@
 - Content URI is a Uri or uniform resource identifier that maps to the table in the provider.
   - Uniquely identifies a set of data which can be either a single or multiple row in a database or a file.
   - Content URIs include the symbolic name of the entire provider (its authority) and a name that points to a table (a path).
-  - content://com.android.contacts/contacts/id
-    - scheme (content://) - type of Uri
-    - authority (com.android.contacts) - unique across the system.
-    - path (contacts) - type of data or usually table name
-    - row (id) - specifies a single row
+  - ~content://com.android.contacts/contacts/id~
+    - scheme (~content://~) - type of Uri
+    - authority (~com.android.contacts~) - unique across the system.
+    - path (~contacts~) - type of data or usually table name
+    - row (~id~) - specifies a single row
 - Uri Matcher
   - Matches a Uri with an integer code to determines what kind of Uri was passed to the provider. Integer values chooses the desired action for the content URI or URIs that match a particular pattern. A content URI pattern matches content URIs using wildcard characters.
-    - *: Matches a string of any valid characters of any length.
-    - #: Matches a string of numeric characters of any length. Points to a single row.
+    - ~*~: Matches a string of any valid characters of any length.
+    - ~#~: Matches a string of numeric characters of any length. Points to a single row.
 
 *** Permissions
 
 - Permissions are not set by default which means all apps can read from or write to your provider even if the underlying data is private
-- Set in the <provider> tag in manifest file
+- Set in the ~<provider>~ tag in manifest file
 - Control access
-  - android:permission allows single permission for provider-level read-write access.
-  - Separate read and write provider-level permission
-    - android:readPermission - query
-    - android:writePermission - insert, update, delete
-    - takes precedence over android:permission
+  - Provider-level
+    - Single permission
+      - ~android:permission~ single declaration for both read and write access.
+    - Separate read and write
+      - ~android:readPermission~ - query
+      - ~android:writePermission~ - insert, update, delete
+      - takes precedence over ~android:permission~
   - Path-level permission
-    - Read, write, or read/write permission for a content URI in the provider. Specify each URI to control with a <path-permission> child element of the <provider> element.
-    - android:path="/subPath" - applies to entries within subPath but not subdirectories within it.
-    - android:pathPrefix="/subPath" - applies to subdirectories within the subPath.
-    - android:pathPattern - wildcard
-  - Temporary permission
-    - URI permissions allow any component that has permission to access a content URI within a Content Provider to temporarily grant another component that permission, even if that component does not itself have permission to access the Content Provider.
-    - By default the granting of temporary URI permissions is disabled and can be enabled as using the following ways.
-      - android:grantUriPermission
-	- true - permission can be granted to any of the content provider's data.
-	- false - permission can be granted only to the data subsets listed in <grant-uri-permission> subelements, if any.
-      - <grant-uri-permission> - path-level permissions with same control as path, pathPrefix, and pathPattern.
-    - Call Context.revokeUriPermission() whenever support for a content Uri is removed.
-    - You can access data in a content provider, even if you don't have the proper access permissions, by sending an intent to an application that does have the permissions and receiving back a result intent containing "URI" permissions. These are permissions for a specific content URI that last until the activity that receives them is finished. The application that has permanent permissions grants temporary permissions by setting a flag in the result intent.
-      - Read permission: FLAG_GRANT_READ_URI_PERMISSION
-      - Write permission: FLAG_GRANT_WRITE_URI_PERMISSION
+    - Read, write, or read/write permission for a content URI in the provider.
+    - ~android:path="/subPath"~ - applies to entries within ~subPath~ but not subdirectories within it.
+    - ~android:pathPrefix="/subPath"~ - applies to subdirectories within the subPath.
+    - ~android:pathPattern~ - wildcard
+- Temporary permission
+  - URI permissions allow any component that has permission to access a content URI within a Content Provider to temporarily grant another component that permission, even if that component does not itself have permission to access the Content Provider.
+  - By default the granting of temporary URI permissions is disabled and can be enabled as using the following ways.
+    - ~android:grantUriPermission~
+      - true - permission can be granted to any of the content provider's data.
+      - false - permission can be granted only to the data subsets listed in ~<grant-uri-permission>~ subelements, if any.
+    - ~<grant-uri-permission>~ - path-level permissions with same control as path, pathPrefix, and pathPattern.
+  - Call ~Context.revokeUriPermission()~ whenever support for a content Uri is removed.
+  - You can access data in a content provider, even if you don't have the proper access permissions, by sending an intent to an application that does have the permissions and receiving back a result intent containing "URI" permissions. These are permissions for a specific content URI that last until the activity that receives them is finished. The app that has permanent permissions grants temporary permissions by setting a flag in the result intent.
+    - Read permission: ~FLAG_GRANT_READ_URI_PERMISSION~
+    - Write permission: ~FLAG_GRANT_WRITE_URI_PERMISSION~
 
 *** Notes
 
-- android:enabled: Flag allowing the system to start the provider.
-- android:exported: Flag allowing other applications to use this provider.
+- ~android:enabled~: Flag allowing the system to start the provider.
+- ~android:exported~: Flag allowing other app to use this provider.
 - A contract class is a public final class that contains constant definitions for the URIs, column names, MIME types, and other meta-data that pertain to the provider. The class establishes a contract between the provider and other applications by ensuring that the provider can be correctly accessed even if there are changes to the actual values of URIs, column names, and so forth.
 - The ContentProvider class has two methods for returning MIME types:
   - getType() returns MIME type or content type which describes the type of data stored at the input Uri
@@ -317,30 +320,30 @@
 
 ** Concurrency
 
-- Thread A contains a MessageQueue A and a Looper A (one per thread). Looper A keeps the Thread A alive. Looper A/Thread A have Handlers. Handlers can be used by other threads to put the messages in the MessageQueue A. Looper dequeue the messages and delivers it to the enqueuing Handler which executes in the Thread A which it is associated with.
+- ~Thread A~ contains a ~MessageQueue A~ and a ~Looper A~ (one per thread). ~Looper A~ keeps the ~Thread A~ alive. ~Looper A/Thread A~ have ~Handlers~. Handlers can be used by other threads to put the messages in the ~MessageQueue A~. Looper dequeue the messages and delivers it to the enqueuing Handler which executes in the ~Thread A~ which it is associated with.
 
 *** Thread (class)
 
 - Thread is a thread of execution in a program.
-- It is a class which implements Runnable interface
+- It is a class which implements ~Runnable~ interface
 - There are two ways to create a Thread
-  - By extending Thread class which overrides run method from the Runnable interface.
+  - By extending Thread class which overrides ~run~ method from the Runnable interface.
   - A class implement Runnable interface which implements run method.
 - All components of an app run in the same process or thread by default.
 - Main thread is in charge of dispatching events to the appropriate user interface widgets and communicating with Android UI toolkit.
 - Android UI is not thread safe and has to be modified from the main thread itself.
 - Some ways to access UI thread from other threads
-  - Activity.runOnUiThread(Runnable)
-  - View.post(Runnable)
-  - View.postDelayed(Runnable, Long)
+  - ~Activity.runOnUiThread(Runnable)~
+  - ~View.post(Runnable)~
+  - ~View.postDelayed(Runnable, Long)~
 - Thread are one time use only and are destroyed once run method is completed.
 - There is an overhead involved in starting a thread.
 
 *** Handler
 
-- Handler enqueues task in the MessageQueue using Looper and also executes them when the task comes out of the MessageQueue.
-- HandlerThread - a subclass of Thread which streamlines process of creation of Looper, Handler, etc. It is a convenience class.
-- A Handler allows you to send and process Message and Runnable objects associated with a thread's MessageQueue.
+- ~Handler~ enqueues task in the ~MessageQueue~ using ~Looper~ and also executes them when the task comes out of the ~MessageQueue~.
+- Handler allows you to send and process ~Message~ and ~Runnable~ objects associated with a thread's MessageQueue.
+- ~HandlerThread~ - a subclass of Thread which streamlines process of creation of Looper, Handler, etc. It is a convenience class.
 - Each Handler instance is associated with a single thread and that thread's message queue.
 - When you create a new Handler it is bound to a Looper.
 - It will deliver messages and runnables to that Looper's message queue and execute them on that Looper's thread.
@@ -391,7 +394,7 @@
 
 *** ThreadPoolExecutor
 
-- An ExecutorService that assigns tasks to a pool of threads.
+- An ~ExecutorService~ that assigns tasks to a pool of threads.
 - Constructor allows setting initial and maximum number of threads to be used, time to keep them alive, and a queue for holding tasks.
 
 [[file:/home/sudhir/Dropbox/Orgzly/handler_looper_queue.png]]
@@ -612,36 +615,30 @@
 
 **** Abstract classes
 
- - Function as a base for subclasses.
- - Can't be instantiated.
- - Keyword - extend
- - Defined as a class or method with keyword abstract. Variables can't be abstract.
- - Abstract method have no implementation. Must be overridden by subclasses. Must implement all abstract methods.
- - Can contain both abstract and non-abstract methods. Unlike interface which can only have methods signatures.
- - Multiple inheritance not allowed.
- - Can have constructor and static and final methods.
- - Can't use other access modifiers like private, final, etc.
- - Example - Vehicle abstract class and Car, Bike, Scooter subclasses.
-   - They all have common operations like start, stop, accelerate, brake, etc.
-   - Having extend abstract class means they share common operations and a Vehicle must have these common attributes.
-   - Client may not be interested in implementation details of operation of start, stop, etc. of bike, scooter, etc.
+- A class that contains both abstract and non-abstract/concrete methods.
+- Abstract methods have no implementation. Subclass must ~@Override~ all abstract methods. Overriding non-abstract method is optional.
+- Can't be instantiated. A class being abstract that its instances can't be created. It is not meant to be instantiated on its own.
+- A subclass ~extends~ an abstract class. Class should be declared as ~abstract~.
+- Multiple inheritance not allowed.
+- Can have constructor. Fields and functions can be Static and Final. Variables can't be abstract.
+- Can't use other access modifiers like private, final, etc.
+- Provides a common or default implementation to subclasses.
+- Example - Vehicle abstract class and Car, Bike, Scooter subclasses. Car, Bike, Scooter, etc. would have same functionality like start, stop, accelerate, brake, etc. but different implementation and hence abstract class would be useful in this case.
 
 **** Interfaces
 
- - Only contains member signatures. No default implementation of methods is provided up to Java 7 but allowed over Java 8 and above.
- - Keyword - implement
- - Can't be instantiated. One can instantiate a class that implements the interface.
- - Implementing class must implement all methods of the interface being implemented.
- - Multiple inheritance allowed by implementing several interfaces.
+- Defines what are all methods/functionality implementing classes would have.
+- Only contains method signatures.
+- Classes ~implement~ interfaces. Must implement all methods of the interface.
+- Can't be instantiated. One can instantiate a class that implements the interface.
+- Multiple inheritance allowed by implementing several interfaces.
 
-Differences between Abstract classes and Interfaces
+**** Differences between Abstract classes and Interfaces
 
- - Abstract class can have implemented and unimplemented methods whereas interfaces have only unimplemented methods
- - Abstract can implement interfaces whereas interfaces can't extend abstract methods
-
-When to use which
-
- - Use abstract class when default or common implementation may be needed
+- Abstract class can have implemented and unimplemented methods whereas interfaces have only unimplemented methods
+- Abstract can implement interfaces whereas interfaces can't extend abstract methods
+- Only one abstract class can be extended whereas multiple inheritance is allowed with interfaces.
+- Abstract class is used to provide a common implementation
 
 *** Encapsulation
 
@@ -817,23 +814,41 @@ class DataManager(databaseHelper: DatabaseHelper, networkHelper: NetworkHelper) 
 
 * Coroutine
 
- - Coroutine builder - create/start a coroutine. For example, async(), runBlocking, launch(), etc.
-   - launch - doesn't return the result to the caller. fire and forget.
-   - async - allows you to return a result with a suspend function called await.
- - CoroutineScope - Keeps track of any coroutine it creates. Can cancel them all. Scope or lifecycle of the caller or the coroutine. For example, GlobalScope, viewModelScope, etc.
-   - viewModelScope - Coroutines are cancelled when the ViewModel is cleared. Useful when computing some data for the layout.
-   - liveDataScope - Active when LiveData is active and cancels when LiveData becomes inactive. Restarted if the LiveData is cleared before the execution of suspended function hasn't finished.
- - Coroutine Context - contextual info about a coroutine
- - Job - piece of work that needs to be done. returned by launch(), async(). Handle to the coroutine in the queue. Each coroutine that you create with launch or async returns a Job instance that uniquely identifies the coroutine and manages its lifecycle.
- - CoroutineDispatcher - defines thread pool to launch coroutine. Can help switch between threads. Coroutine should be executed on a predefined thread. Dispatchers.IO is reserved for IO operations.
-   - Dispatchers.Default - cpu intensive work.
-   - Dispatchers.IO - networking, io, etc.
-   - Dispatchers.Main - ui related events.
- - withContext(some dispatcher) - change the thread.
+** Coroutine builder
+
+- create/start a coroutine. For example, async(), runBlocking, launch(), etc.
+-launch - doesn't return the result to the caller. fire and forget.
+- async - allows you to return a result with a suspend function called await.
+
+** CoroutineScope 
+
+- Keeps track of any coroutine it creates. Can cancel them all. Scope or lifecycle of the caller or the coroutine. For example, GlobalScope, viewModelScope, etc.
+  - viewModelScope - Coroutines are cancelled when the ViewModel is cleared. Useful when computing some data for the layout.
+  - liveDataScope - Active when LiveData is active and cancels when LiveData becomes inactive. Restarted if the LiveData is cleared before the execution of suspended function hasn't finished.
+
+** Coroutine Context
+
+- contextual info about a coroutine
+
+**  Job
+
+- piece of work that needs to be done. returned by launch(), async(). Handle to the coroutine in the queue. Each coroutine that you create with launch or async returns a Job instance that uniquely identifies the coroutine and manages its lifecycle.
+
+** CoroutineDispatcher
+
+- defines thread pool to launch coroutine. Can help switch between threads. Coroutine should be executed on a predefined thread. Dispatchers.IO is reserved for IO operations.
+- Dispatchers.Default - cpu intensive work.
+- Dispatchers.IO - networking, io, etc.
+- Dispatchers.Main - ui related events.
+
+** Notes
+
+- withContext(some dispatcher) - change thread. 
+- Concurrency is when multiple tasks seem to be executed at the same time.
 
 ** Flow
 
- - stream of data that executes sequentially
- - Flow is a sequence
- - The main difference between Kotlin Sequences and Flow is that Flow allows the execution to be suspended.
+- stream of data that executes sequentially
+- Flow is a sequence
+- The main difference between Kotlin Sequences and Flow is that Flow allows the execution to be suspended.
 
