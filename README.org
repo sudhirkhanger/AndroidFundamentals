@@ -852,3 +852,25 @@ class DataManager(databaseHelper: DatabaseHelper, networkHelper: NetworkHelper) 
 - Flow is a sequence
 - The main difference between Kotlin Sequences and Flow is that Flow allows the execution to be suspended.
 
+* Kotlin
+
+** Sealed Classes
+
+- Representing class hierarchy
+- Can be one of the types from one of the limited sets
+- Can have multiple instances of a sealed class
+- Implicitly abstract
+  - Child class can be of any type (data, object, regular, or even sealed class or a mix of them)
+  - Child classes must be in the same file or nested class
+
+#+begin_src java
+sealed class Result {
+  data class Success(Data): Result
+  data class Error(Exception): Result
+}
+#+end_src
+
+- Can't instantiate
+- Private constructor
+- Useful in state management
+- Exhaustive when
